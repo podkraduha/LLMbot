@@ -21,6 +21,19 @@ def get_agent(df: pd.DataFrame, api_key: str, user_context: str = ""):
         model="qwen-turbo",  # или "qwen-plus", "qwen-max"
         dashscope_api_key=api_key
     )
+    python_repl = PythonREPLTool()
+    original_invoke = python_repl.invoke
+    def safe_invoke(inputs: dict) -> dict:
+        command = inputs.get("input", "") if isinstance(inputs, dict) else str(inputs)
+        sanitized = sanitize_code(command)
+        if isinstance(inputs, dict):
+            inputs["input"] = sanitized
+        else:
+            inputs = sanitized
+        return original_invoke(inputs)
+
+    python_repl.invoke = safe_invoke
+
 
 def sanitize_code(code: str) -> str:
     """Проверяет код, который хочет выполнить агент, на вредоносность."""
