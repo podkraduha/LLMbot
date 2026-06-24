@@ -2,18 +2,18 @@ import os
 import re
 import pandas as pd
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 
 
 def get_agent(df: pd.DataFrame, api_key: str, user_context: str = ""):
     """Создает и возвращает LLM-агента для анализа DataFrame."""
 
-    # Инициализация LLM (Google Gemini)
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash",  # Быстрая модель, отлично подходит для кода
+    # Инициализация LLM (Groq + Qwen3-32B)
+    llm = ChatOpenAI(
         temperature=0,
-        google_api_key=api_key,
-        convert_system_message_to_human=True  # Важно для корректной работы системного промпта в Gemini
+        model="qwen/qwen3-32b",  # Мощная модель Qwen3 через Groq
+        api_key=api_key,
+        base_url="https://api.groq.com/openai/v1"  # ← Адрес Groq API
     )
 
     # Системный промпт с защитой от инъекций
