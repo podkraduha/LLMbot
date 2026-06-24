@@ -11,7 +11,7 @@ def get_agent(df: pd.DataFrame, api_key: str, user_context: str = ""):
     # Инициализация LLM (Groq + Qwen3-32B)
     llm = ChatOpenAI(
         temperature=0,
-        model="qwen/qwen3.6-27b",  # Мощная модель Qwen3 через Groq
+        model="openai/gpt-oss-120b",  # Мощная модель Qwen3 через Groq
         api_key=api_key,
         base_url="https://api.groq.com/openai/v1"  # ← Адрес Groq API
     )
