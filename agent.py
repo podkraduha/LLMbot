@@ -2,17 +2,18 @@ import os
 import re
 import pandas as pd
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
-from langchain_community.llms import Tongyi
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 
-# Защита от Prompt Injection через системный промпт
 def get_agent(df: pd.DataFrame, api_key: str, user_context: str = ""):
     """Создает и возвращает LLM-агента для анализа DataFrame."""
 
-    # Инициализация LLM (Qwen через DashScope)
-    llm = Tongyi(
-        model="qwen-turbo",  # или "qwen-plus", "qwen-max"
-        dashscope_api_key=api_key
+    # Инициализация LLM (Google Gemini)
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-1.5-flash",  # Быстрая модель, отлично подходит для кода
+        temperature=0,
+        google_api_key=api_key,
+        convert_system_message_to_human=True  # Важно для корректной работы системного промпта в Gemini
     )
 
     # Системный промпт с защитой от инъекций
@@ -31,14 +32,14 @@ def get_agent(df: pd.DataFrame, api_key: str, user_context: str = ""):
     Сохраняй все графики в папку './plots/' с уникальными именами (например, plot_1.png, plot_2.png).
     """
 
-    # Создаём агента (встроенный интерпретатор кода уже включён!)
+    # Создаём агента
     agent = create_pandas_dataframe_agent(
         llm,
         df,
         verbose=True,
         agent_executor_kwargs={"handle_parsing_errors": True},
         prefix=system_prompt,
-        allow_dangerous_code=True  # Разрешаем выполнение кода (требуется для pandas agent)
+        allow_dangerous_code=True
     )
 
     return agent

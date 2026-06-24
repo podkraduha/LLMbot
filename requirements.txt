@@ -1,8 +1,7 @@
 streamlit==1.35.0
 langchain==0.2.5
 langchain-experimental==0.0.60
-langchain-community==0.2.5
-dashscope==1.14.1
+langchain-google-genai==1.0.6
 pandas==2.2.2
 openpyxl==3.1.4
 matplotlib==3.9.0
