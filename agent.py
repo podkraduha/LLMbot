@@ -8,6 +8,9 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
+# 🛑 ЖЕСТКО ВЫКЛЮЧАЕМ ТРЕЙСИНГ LANGSMITH (убирает ложные 403 ошибки от фреймворка)
+os.environ["LANGCHAIN_TRACING_V2"] = "false"
+
 
 def get_agent(df: pd.DataFrame, api_key: str, user_context: str = ""):
     """Создает и возвращает LLM-агента для анализа DataFrame."""
@@ -16,27 +19,29 @@ def get_agent(df: pd.DataFrame, api_key: str, user_context: str = ""):
     if not api_key or not api_key.startswith("gsk_"):
         raise ValueError("❌ Неверный API-ключ Groq. Ключ должен начинаться с 'gsk_'")
 
-    # Инициализация LLM с правильными параметрами для Groq
+    # Инициализация LLM с ПРАВИЛЬНЫМИ параметрами для Groq
     llm = ChatOpenAI(
         temperature=0,
-        model="qwen/qwen3-32b",  # ✅ Используем проверенную модель
+        # 🛠 ИСПРАВЛЕНО: Указана реальная модель Groq без слэшей.
+        # Если нужен Qwen, пиши: "qwen-2.5-coder-32b"
+        model="llama-3.3-70b-versatile",
         api_key=api_key,
         base_url="https://api.groq.com/openai/v1",
         timeout=120,
         max_retries=3,
-        # Важно: отключаем лишние заголовки
         default_headers={
             "Content-Type": "application/json",
-            # Не добавляем лишних заголовков
         }
     )
 
     # Проверяем, что LLM работает
     try:
-        test_response = llm.invoke("Test connection")
-        print("✅ LLM инициализирована успешно")
+        # Для проверки используем короткий системный вызов
+        test_response = llm.invoke("Hi")
+        print("✅ LLM инициализирована успешно. Ответ Groq получен.")
     except Exception as e:
         print(f"❌ Ошибка инициализации LLM: {e}")
+        print("💡 СОВЕТ: Если здесь 403, проверь, включен ли VPN в терминале. Groq блокирует СНГ-IP.")
         raise
 
     # Улучшенный системный промпт
@@ -60,14 +65,13 @@ def get_agent(df: pd.DataFrame, api_key: str, user_context: str = ""):
         agent = create_pandas_dataframe_agent(
             llm,
             df,
-            verbose=False,  # Отключаем для чистоты
+            verbose=True,  # Включаем True для отладки Задания №3, чтобы видеть мысли агента
             agent_type="zero-shot-react-description",
             handle_parsing_errors=True,
             prefix=system_prompt,
             allow_dangerous_code=True,
             max_iterations=10,
             early_stopping_method="generate",
-            # Добавляем callback для отладки
             callbacks=[StdOutCallbackHandler()]
         )
         print("✅ Агент создан успешно")
@@ -75,56 +79,3 @@ def get_agent(df: pd.DataFrame, api_key: str, user_context: str = ""):
     except Exception as e:
         print(f"❌ Ошибка создания агента: {e}")
         raise
-
-
-# Альтернативная версия с использованием OpenAI-совместимого API
-def get_agent_simple(df: pd.DataFrame, api_key: str, user_context: str = ""):
-    """
-    Упрощенная версия агента с меньшим количеством настроек.
-    Используйте эту версию, если основная не работает.
-    """
-
-    llm = ChatOpenAI(
-        temperature=0,
-        model="qwen/qwen3-32b",
-        api_key=api_key,
-        base_url="https://api.groq.com/openai/v1",
-    )
-
-    system_prompt = f"""
-    Ты — Data Scientist. Анализируй данные.
-    КОНТЕКСТ: {user_context}
-    ЗАПРЕЩЕНО: os, sys, subprocess, open, eval, exec.
-    """
-
-    return create_pandas_dataframe_agent(
-        llm,
-        df,
-        verbose=True,
-        prefix=system_prompt,
-        allow_dangerous_code=True,
-        handle_parsing_errors=True,
-        max_iterations=5
-    )
-
-
-# Функция для тестирования агента
-def test_agent(df: pd.DataFrame, api_key: str):
-    """Тестовая функция для проверки работы агента"""
-
-    print("🔍 Тестируем агента...")
-    agent = get_agent(df, api_key, "Найди тренд")
-
-    test_queries = [
-        "Сколько строк в данных?",
-        "Покажи первые 5 строк",
-        "Какие столбцы есть в данных?"
-    ]
-
-    for query in test_queries:
-        print(f"\n📝 Вопрос: {query}")
-        try:
-            response = agent.run(query)
-            print(f"✅ Ответ: {response[:200]}...")
-        except Exception as e:
-            print(f"❌ Ошибка: {e}")
