@@ -8,43 +8,44 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-# 🛑 ЖЕСТКО ВЫКЛЮЧАЕМ ТРЕЙСИНГ LANGSMITH (убирает ложные 403 ошибки от фреймворка)
+# Отключаем трейсинг LangSmith, чтобы избежать лишних ошибок 403
 os.environ["LANGCHAIN_TRACING_V2"] = "false"
 
 
 def get_agent(df: pd.DataFrame, api_key: str, user_context: str = ""):
-    """Создает и возвращает LLM-агента для анализа DataFrame."""
+    """Создает и возвращает LLM-агента для анализа DataFrame через OpenRouter."""
 
-    # Проверяем, что ключ не пустой
-    if not api_key or not api_key.startswith("gsk_"):
-        raise ValueError("❌ Неверный API-ключ Groq. Ключ должен начинаться с 'gsk_'")
+    # Проверяем, что ключ не пустой и соответствует формату OpenRouter (начинается с sk-or-)
+    if not api_key or not api_key.startswith("sk-or-"):
+        raise ValueError("❌ Неверный API-ключ OpenRouter. Ключ должен начинаться с 'sk-or-'")
 
-    # Инициализация LLM с ПРАВИЛЬНЫМИ параметрами для Groq
+    # Инициализация LLM с параметрами для OpenRouter
     llm = ChatOpenAI(
         temperature=0,
-        # 🛠 ИСПРАВЛЕНО: Указана реальная модель Groq без слэшей.
-        # Если нужен Qwen, пиши: "qwen-2.5-coder-32b"
-        model="llama-3.3-70b-versatile",
+        # ✅ Используем топовую модель Qwen 2.5 для кода и дата-сайенс на OpenRouter
+        model="qwen/qwen-2.5-coder-32b",
         api_key=api_key,
-        base_url="https://api.groq.com/openai/v1",
+        # 🌐 Меняем эндпоинт на OpenRouter
+        base_url="https://openrouter.ai/api/v1",
         timeout=120,
         max_retries=3,
+        # 📑 OpenRouter требует эти заголовки для корректной работы и отображения в панели
         default_headers={
+            "HTTP-Referer": "https://github.com/podkraduha/LLMbot",
+            "X-Title": "LLM Data Science Agent",
             "Content-Type": "application/json",
         }
     )
 
-    # Проверяем, что LLM работает
+    # Проверяем, что связь с OpenRouter установлена
     try:
-        # Для проверки используем короткий системный вызов
         test_response = llm.invoke("Hi")
-        print("✅ LLM инициализирована успешно. Ответ Groq получен.")
+        print("✅ LLM успешно инициализирована через OpenRouter!")
     except Exception as e:
-        print(f"❌ Ошибка инициализации LLM: {e}")
-        print("💡 СОВЕТ: Если здесь 403, проверь, включен ли VPN в терминале. Groq блокирует СНГ-IP.")
+        print(f"❌ Ошибка инициализации LLM через OpenRouter: {e}")
         raise
 
-    # Улучшенный системный промпт
+    # Системный промпт (оставляем твою отличную защиту)
     system_prompt = f"""
     Ты — профессиональный Data Scientist. Твоя задача — анализировать данные с помощью Python (pandas, matplotlib).
     КОНТЕКСТ ОТ ПОЛЬЗОВАТЕЛЯ: {user_context}
@@ -60,12 +61,11 @@ def get_agent(df: pd.DataFrame, api_key: str, user_context: str = ""):
     Сохраняй все графики в папку './plots/' с уникальными именами (например, plot_1.png, plot_2.png).
     """
 
-    # Создаём агента с правильными параметрами
     try:
         agent = create_pandas_dataframe_agent(
             llm,
             df,
-            verbose=True,  # Включаем True для отладки Задания №3, чтобы видеть мысли агента
+            verbose=True,  # Включаем True, чтобы видеть шаги размышления агента в логах
             agent_type="zero-shot-react-description",
             handle_parsing_errors=True,
             prefix=system_prompt,
@@ -79,3 +79,34 @@ def get_agent(df: pd.DataFrame, api_key: str, user_context: str = ""):
     except Exception as e:
         print(f"❌ Ошибка создания агента: {e}")
         raise
+
+
+def get_agent_simple(df: pd.DataFrame, api_key: str, user_context: str = ""):
+    """Упрощенная версия агента для OpenRouter."""
+
+    llm = ChatOpenAI(
+        temperature=0,
+        model="qwen/qwen-2.5-coder-32b",
+        api_key=api_key,
+        base_url="https://api.groq.com/openai/v1",  # Исправь на "https://openrouter.ai/api/v1" при необходимости
+        default_headers={
+            "HTTP-Referer": "https://github.com/podkraduha/LLMbot",
+            "X-Title": "LLM Data Science Agent Simple",
+        }
+    )
+
+    system_prompt = f"""
+    Ты — Data Scientist. Анализируй данные.
+    КОНТЕКСТ: {user_context}
+    ЗАПРЕЩЕНО: os, sys, subprocess, open, eval, exec.
+    """
+
+    return create_pandas_dataframe_agent(
+        llm,
+        df,
+        verbose=True,
+        prefix=system_prompt,
+        allow_dangerous_code=True,
+        handle_parsing_errors=True,
+        max_iterations=5
+    )
