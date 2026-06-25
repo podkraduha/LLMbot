@@ -1,11 +1,10 @@
-version: '3.8'
 services:
   streamlit-app:
     build: .
     ports:
       - "8501:8501"
     volumes:
-      - ./plots:/app/plots # Чтобы графики сохранялись
+      - ./plots:/app/plots
     environment:
       - PYTHONUNBUFFERED=1
     restart: always
