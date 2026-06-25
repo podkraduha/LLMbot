@@ -9,7 +9,7 @@ st.title("AI аналитик данных")
 #Боковая панель
 with st.sidebar:
     st.header("Настройки")
-    api_key = st.text_input("OpenAI API Key:", type="password")
+    api_key = st.text_input("API Key:", type="password")
     st.markdown("---")
     st.header("Загрузка данных")
     uploaded_file = st.file_uploader("Загрузите CSV или Excel", type=['csv', 'xlsx'])
