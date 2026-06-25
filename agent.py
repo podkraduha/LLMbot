@@ -23,7 +23,7 @@ def get_agent(df: pd.DataFrame, api_key: str, user_context: str = ""):
     llm = ChatOpenAI(
         temperature=0,
         # ✅ Используем топовую модель Qwen 2.5 для кода и дата-сайенс на OpenRouter
-        model="qwen/qwen-2.5-coder-32b",
+        model="qwen/qwen3-32b",
         api_key=api_key,
         # 🌐 Меняем эндпоинт на OpenRouter
         base_url="https://openrouter.ai/api/v1",
@@ -86,7 +86,7 @@ def get_agent_simple(df: pd.DataFrame, api_key: str, user_context: str = ""):
 
     llm = ChatOpenAI(
         temperature=0,
-        model="qwen/qwen-2.5-coder-32b",
+        model="qwen/qwen3-32b",
         api_key=api_key,
         base_url="https://api.groq.com/openai/v1",  # Исправь на "https://openrouter.ai/api/v1" при необходимости
         default_headers={
